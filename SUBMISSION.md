@@ -1,4 +1,4 @@
-# GigShield — Graveyard Hack Submission (Solana Foundation)
+# GigShield — Graveyard Hack 2026 Submission (Solana Foundation)
 
 ---
 
@@ -10,13 +10,23 @@
 
 ## 2. ONE-LINE DESCRIPTION
 
-GigShield brings trustless, pay-per-gig micro-insurance to 2 billion gig workers worldwide — powered by Solana's speed and a decentralized validator network that makes insurance claims transparent, instant, and fair.
+GigShield brings trustless, pay-per-gig micro-insurance to 2 billion gig workers worldwide — powered by Solana's speed, SHA-256 evidence verification, a 5% protocol treasury, and a decentralized validator network that makes insurance claims transparent, instant, and fair.
 
 ---
 
-## 3. GITHUB README
+## 3. LINKS
 
-> (This section should replace the current README.md — see below for full content)
+| | |
+|---|---|
+| **Live App** | https://gigshield.vercel.app |
+| **GitHub** | https://github.com/yt2025id-lab/gigshield |
+| **Program ID** | `4oYtnLRhL2mRfzfXpM7CaC8WUZeAnEdHcAkyDPsmyDYV` |
+| **Explorer** | https://explorer.solana.com/address/4oYtnLRhL2mRfzfXpM7CaC8WUZeAnEdHcAkyDPsmyDYV?cluster=devnet |
+| **Network** | Solana Devnet |
+
+---
+
+## 4. GITHUB README
 
 ```markdown
 # GigShield — Decentralized Micro-Insurance for the Gig Economy
@@ -40,32 +50,41 @@ The gig economy employs over **2 billion workers globally**, yet the vast majori
 
 - **Pay-per-gig coverage** — premiums as low as 0.001 SOL per gig
 - **Instant policy activation** — coverage starts the moment you pay
+- **SHA-256 evidence verification** — claim evidence is hashed and anchored on-chain, tamper-proof
 - **Decentralized claim validation** — staked validators vote on claims using a 2/3 majority consensus
-- **Automatic payouts** — approved claims are paid out directly from the pool vault, no intermediaries
+- **Automatic payouts** — approved claims pay 95% to worker; 5% to protocol treasury
+- **48-hour voting window** — real-time countdown and vote progress bar for full transparency
 - **Multi-category pools** — RideShare, Delivery, Freelance, Construction, Healthcare
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────┐
-│           Frontend (Next.js 14)          │
-│    Wallet Connect · Pool Dashboard       │
-│    Claim Submission · Validator Panel     │
-└─────────────────┬────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│             Frontend (Next.js 14)                │
+│  Pools · Claims · Validator · 📊 Stats/Leaderboard│
+│  SHA-256 Evidence · Countdown Timer · Fee Display │
+└─────────────────┬────────────────────────────────┘
                   │
-┌─────────────────▼────────────────────────┐
-│        Solana Program (Anchor 0.30)      │
-│  ┌──────────────┐  ┌──────────────────┐  │
-│  │ Pool Module   │  │  Claim Module    │  │
-│  │ • create_pool │  │  • submit_claim  │  │
-│  │ • deposit     │  │  • vote_claim    │  │
-│  │ • policies    │  │  • withdraw      │  │
-│  └──────┬───────┘  └───────┬──────────┘  │
-│  ┌──────▼──────────────────▼──────────┐  │
-│  │     Validator Network Module       │  │
-│  │  • register  • stake  • reputation │  │
-│  └────────────────────────────────────┘  │
-└──────────────────────────────────────────┘
+┌─────────────────▼────────────────────────────────┐
+│          Solana Program (Anchor 0.30)            │
+│  ┌─────────────────┐  ┌──────────────────────┐   │
+│  │   Pool Module   │  │    Claim Module       │   │
+│  │ • create_pool   │  │ • submit_claim        │   │
+│  │ • deposit_prem. │  │ • vote_claim (48h)    │   │
+│  │ • pool_vault PDA│  │ • withdraw_payout     │   │
+│  └────────┬────────┘  │ • resolve_expired     │   │
+│           │           └──────────┬────────────┘   │
+│  ┌────────▼──────────────────────▼────────────┐   │
+│  │          Validator Network Module          │   │
+│  │  • register_validator  • unstake_validator │   │
+│  │  • 1 SOL min stake     • 24h cooldown      │   │
+│  │  • +5 reputation/claim • 2/3 consensus     │   │
+│  └────────────────────────────────────────────┘   │
+│  ┌────────────────────────────────────────────┐   │
+│  │         Protocol Treasury (PDA)            │   │
+│  │     5% fee on every approved payout        │   │
+│  └────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────┘
 ```
 
 ## Tech Stack
@@ -84,20 +103,53 @@ The gig economy employs over **2 billion workers globally**, yet the vast majori
 ### For Gig Workers
 - Browse insurance pools by category (RideShare, Delivery, Freelance, etc.)
 - Pay micro-premiums (0.001+ SOL) for per-gig coverage
-- Submit claims with evidence hashes stored on-chain
-- Receive automatic payouts when claims are approved
+- Submit claims with SHA-256 evidence fingerprint stored on-chain
+- See real-time vote progress (●●○) and countdown timer on each claim
+- Receive automatic payouts (95% of approved claim, 5% to protocol treasury)
 
 ### For Validators
 - Stake minimum 1 SOL to register as a validator
-- Vote on claims (approve/reject) with on-chain accountability
-- Build reputation score based on voting accuracy
-- Earn rewards for honest participation
+- View claim evidence before voting (approve/reject within 48h)
+- Build reputation score (+5 per consensus vote)
+- 24-hour cooldown enforced on unstaking (anti-flash-loan protection)
 
 ### Protocol Mechanics
 - **2/3 Majority Consensus**: Claims require supermajority validator approval
-- **PDA-based Vaults**: Pool funds secured by program-derived addresses
+- **48-hour Voting Deadline**: Enforced on-chain; expired claims auto-resolvable
+- **10× Premium Cap**: Max claim = 10× total premiums paid (anti-fraud)
+- **5% Protocol Fee**: Collected from each approved payout into treasury PDA
+- **PDA-based Vaults**: Pool funds and validator stakes secured by PDAs
+- **SHA-256 Evidence**: Claim descriptions hashed client-side; fingerprint anchored on-chain
 - **Event Emissions**: All key actions emit on-chain events for indexing
-- **Comprehensive Error Handling**: 13 custom error codes for security
+- **8 Custom Instructions** + 13 custom error codes
+
+## Smart Contract Instructions
+
+| Instruction | Description |
+|---|---|
+| `create_pool` | Create an insurance pool for a gig category |
+| `deposit_premium` | Worker deposits premium to get coverage |
+| `submit_claim` | Worker submits claim with SHA-256 evidence hash |
+| `vote_claim` | Validator votes approve/reject within 48h window |
+| `withdraw_payout` | Worker withdraws 95% payout after approval |
+| `register_validator` | Stake SOL to become a validator node |
+| `unstake_validator` | Withdraw stake after 24h cooldown |
+| `resolve_expired_claim` | Resolve claims past the 48h voting deadline |
+
+## Integration Tests
+
+**10/10 tests passing** on Solana Devnet:
+
+1. ✅ Creates an insurance pool
+2. ✅ Rejects pool creation with invalid premium rate (0)
+3. ✅ Worker deposits premium and creates policy
+4. ✅ Registers three validators with 1 SOL stake each
+5. ✅ Worker submits an insurance claim
+6. ✅ Rejects claim exceeding 10× premium cap
+7. ✅ Three validators approve claim, reaching 2/3 consensus
+8. ✅ Rejects double-voting from same validator
+9. ✅ Worker withdraws payout (95%) with 5% fee to treasury
+10. ✅ Rejects unstake before 24h cooldown
 
 ## How to Run Locally
 
@@ -109,16 +161,22 @@ The gig economy employs over **2 billion workers globally**, yet the vast majori
 
 ### Smart Contract
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/gigshield.git
+git clone https://github.com/yt2025id-lab/gigshield.git
 cd gigshield
 
-# Build the program
-anchor build
+# Build (requires platform-tools v1.53 for edition2024 support)
+anchor build --no-idl -- --tools-version v1.53
 
 # Deploy to devnet
 solana config set --url devnet
 anchor deploy --provider.cluster devnet
+```
+
+### Run Tests
+```bash
+ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+ANCHOR_WALLET=~/.config/solana/id.json \
+npm test
 ```
 
 ### Frontend
@@ -129,21 +187,11 @@ npm run dev
 # Open http://localhost:3000
 ```
 
-## Screenshots
-
-| Landing Page | Insurance Pools | Claim Submission |
-|:---:|:---:|:---:|
-| ![Landing](./screenshots/landing.png) | ![Pools](./screenshots/pools.png) | ![Claims](./screenshots/claims.png) |
-
-| Validator Panel | Wallet Connected |
-|:---:|:---:|
-| ![Validators](./screenshots/validators.png) | ![Wallet](./screenshots/wallet.png) |
-
 ## Built on Solana
 
 GigShield leverages Solana's unique advantages:
 - **Sub-second finality** for instant policy activation
-- **Near-zero transaction costs** making micro-premiums viable
+- **Near-zero transaction costs** making micro-premiums economically viable
 - **Program Derived Addresses (PDAs)** for trustless fund custody
 - **Anchor Framework** for secure, auditable smart contracts
 
@@ -158,116 +206,114 @@ MIT
 
 ---
 
-## 4. DEMO VIDEO SCRIPT (2-3 Minutes)
+## 5. DEMO VIDEO SCRIPT (2-3 Minutes)
 
-### Scene 1: Opening Hook (0:00 - 0:20)
+### Scene 1: Opening Hook (0:00 — 0:20)
 **On screen:** Statistics overlay — "2 billion gig workers. Zero insurance."
 **Narration:**
-> "Two billion people around the world work in the gig economy — driving, delivering, freelancing. And almost none of them have insurance. Why? Because traditional insurance wasn't built for them. It requires monthly premiums, long claims processes, and centralized gatekeepers. Today, we're changing that. Meet GigShield."
+> "Two billion people work in the gig economy — driving, delivering, freelancing. And almost none of them have insurance. Traditional insurance wasn't built for them. Today, we're changing that. Meet GigShield — decentralized micro-insurance on Solana."
 
-### Scene 2: The Problem (0:20 - 0:40)
+### Scene 2: The Problem (0:20 — 0:40)
 **On screen:** Split screen — traditional insurance form vs. GigShield UI
 **Narration:**
-> "Traditional insurance requires monthly commitments, paperwork, and weeks to process claims. Gig workers need something different — coverage that's instant, affordable, and trustless. That's why we built GigShield on Solana — a decentralized micro-insurance protocol where you pay as little as 0.001 SOL per gig."
+> "Traditional insurance means monthly commitments, paperwork, and opaque claims processing. Gig workers need something different — coverage that's instant, affordable, and trustless. GigShield lets you pay as little as 0.001 SOL per gig, with claims validated on-chain."
 
-### Scene 3: Connect Wallet & Browse Pools (0:40 - 1:10)
-**On screen:** Live demo — connecting Phantom wallet, browsing pool categories
+### Scene 3: Connect Wallet & Browse Pools (0:40 — 1:10)
+**On screen:** Live demo — connecting Phantom wallet, Stats tab showing TVL + validator leaderboard
 **Narration:**
-> "Let me show you how it works. First, I connect my Solana wallet. Immediately, I can see insurance pools across multiple categories — RideShare, Delivery, Freelance, Construction, Healthcare. Each pool shows the total value locked, active policies, and minimum premium required."
+> "After connecting my Solana wallet, I can see the protocol stats — total value locked, active policies, and our validator leaderboard ranked by reputation score. Insurance pools are available across five categories: RideShare, Delivery, Freelance, Construction, Healthcare."
 
-### Scene 4: Deposit Premium & Get Covered (1:10 - 1:40)
-**On screen:** Clicking "Join Pool" on RideShare, depositing 0.001 SOL, transaction confirming
+### Scene 4: Deposit Premium & Get Covered (1:10 — 1:40)
+**On screen:** Clicking "Deposit Premium" on RideShare pool, entering 0.001 SOL, transaction confirming
 **Narration:**
-> "To get covered, I simply select a pool and deposit my premium. Watch — I'm paying 0.001 SOL for this delivery gig. The transaction confirms in under a second on Solana. My policy is now active. That's it. No forms, no waiting, no middlemen."
+> "To get covered, I deposit a micro-premium. Just 0.001 SOL — that's a fraction of a cent — for this delivery gig. The transaction confirms in under a second on Solana. My policy is active. No forms, no waiting, no middlemen."
 
-### Scene 5: Submit a Claim (1:40 - 2:10)
-**On screen:** Filing a claim with description and evidence hash, transaction confirming
+### Scene 5: Submit a Claim with Evidence (1:40 — 2:10)
+**On screen:** Filing a claim, typing evidence description, SHA-256 hash generated, transaction confirming
 **Narration:**
-> "Now, let's say something goes wrong during my gig. I submit a claim with a description and evidence hash stored on-chain. The claim goes to our decentralized validator network — staked participants who review and vote on claims. A two-thirds majority is required for approval. No single entity controls the outcome."
+> "When something goes wrong, I submit a claim with a full evidence description. GigShield automatically generates a SHA-256 fingerprint of my evidence and anchors it on-chain — tamper-proof, forever. The claim enters a 48-hour voting window with a real-time countdown timer and vote progress bar."
 
-### Scene 6: Validator Voting & Payout (2:10 - 2:40)
-**On screen:** Validator dashboard, voting interface, auto-payout animation
+### Scene 6: Validator Voting & Payout (2:10 — 2:40)
+**On screen:** Validator tab voting, vote progress dots filling, withdraw button showing 95% payout
 **Narration:**
-> "Validators stake at least 1 SOL to participate, building reputation over time. Once enough validators approve the claim, the payout is automatically transferred from the pool vault to the worker's wallet. Completely trustless. Completely on-chain."
+> "Validators review the evidence and vote approve or reject. Once 2 of 3 validators reach consensus, the payout is triggered. Workers receive 95% of the claim — the remaining 5% goes to the protocol treasury. Completely trustless, completely on-chain."
 
-### Scene 7: Closing (2:40 - 3:00)
-**On screen:** GigShield logo, tagline, tech stack badges
+### Scene 7: Closing (2:40 — 3:00)
+**On screen:** GigShield logo + Stats tab leaderboard
 **Narration:**
-> "GigShield resurrects insurance on Solana — making it accessible, affordable, and decentralized for the billions who need it most. Built with Anchor, Next.js, and Solana Wallet Adapter. GigShield — micro-insurance for the gig economy. Thank you."
+> "GigShield resurrects insurance on Solana — 8 on-chain instructions, 10/10 integration tests, live on devnet today. Affordable, decentralized, and fair for the billions who need it most. GigShield — micro-insurance for the gig economy."
 
 ---
 
-## 5. SPONSOR BOUNTIES
+## 6. SPONSOR BOUNTIES
 
-### Primary Track: General / Overall Prize ($30,000)
+### Primary Track: General / Overall Prize
 
-GigShield is positioned for the **overall prize track** as it represents a completely novel use case — **resurrecting insurance as a dead category on Solana**. This aligns perfectly with the Graveyard Hack theme.
+GigShield is positioned for the **overall prize** as it represents a completely novel use case — **resurrecting insurance as a dead category on Solana**.
 
 **Why GigShield deserves the overall prize:**
-- **Novel Category**: No existing insurance protocol on Solana — this is a true "resurrection"
+- **Novel Category**: No existing micro-insurance protocol on Solana — true resurrection
 - **Real-World Impact**: Addresses a $2B+ market of underserved gig workers
-- **Complete Implementation**: Full smart contract (6 instructions, 6 account types, event emissions) + working frontend
-- **Technical Excellence**: Proper PDA design, 2/3 consensus mechanism, staked validator network with reputation scoring
+- **Complete Implementation**: 8-instruction smart contract + full-stack frontend + 10/10 integration tests
+- **Economic Design**: 5% protocol fee → treasury sustainability; 10× premium cap → anti-fraud; validator reputation → honest participation
+- **Technical Excellence**: SHA-256 evidence, PDA vaults, 2/3 consensus, 48h voting deadline, cooldown protection
 
-### Potential Sponsor Alignment:
+### Potential Sponsor Alignment
 
 | Sponsor | Relevance | Integration |
 |---------|-----------|-------------|
-| **Realms (DAOs)** | GigShield's validator network functions as a specialized DAO — validators stake, vote on claims, and govern insurance pools collectively | Validator governance module uses DAO-like voting mechanics with stake-weighted participation |
-| **Torque (Loyalty)** | Reputation scoring system for validators rewards consistent, honest participation | Built-in reputation score that increases with accurate claim validation |
+| **Realms (DAOs)** | Validator network functions as a specialized DAO — staking, voting, governance | Claim voting uses DAO-like stake-weighted supermajority mechanics |
+| **Torque (Loyalty)** | Reputation scoring rewards consistent honest participation | On-chain reputation score increases with accurate claim validation |
 
 ---
 
-## 6. NEXT ROADMAP
+## 7. NEXT ROADMAP
 
-### Phase 1: Foundation (Weeks 1-2, Post-Hackathon)
-- Deploy to Solana Mainnet-Beta
-- Comprehensive smart contract audit
-- Complete frontend integration with all 6 program instructions
-- Launch beta with RideShare and Delivery pools
+### Phase 1: Post-Hackathon (Weeks 1-2)
+- [ ] Deploy to Solana Mainnet-Beta
+- [ ] Professional smart contract audit
+- [ ] Integrate oracle feeds for dynamic premium pricing
+- [ ] SPL token support (USDC premiums)
 
 ### Phase 2: Growth (Months 1-2)
-- Integrate oracle feeds for dynamic premium pricing
-- Add SPL token support (USDC premiums)
-- Implement validator reward distribution mechanism
-- Partner with 2-3 gig platforms (Uber, DoorDash equivalents in Web3)
+- [ ] Validator reward distribution from treasury to accurate voters
+- [ ] Partner with Web3 gig platforms
+- [ ] Mobile-optimized PWA
+- [ ] AI-assisted claim evidence verification
 
 ### Phase 3: Scale (Months 2-4)
-- Multi-chain expansion (consider Solana → EVM bridges)
-- AI-assisted claim evidence verification
-- Mobile-optimized progressive web app
-- Launch DAO governance for protocol parameters
+- [ ] DAO governance for protocol parameters
+- [ ] Cross-pool risk diversification engine
+- [ ] Reinsurance pools for catastrophic events
+- [ ] SDK for gig platforms to embed GigShield natively
 
 ### Phase 4: Ecosystem (Months 4-6)
-- SDK for gig platforms to embed GigShield natively
-- Cross-pool risk diversification engine
-- Reinsurance pools for catastrophic events
-- Token launch for protocol governance and staking rewards
+- [ ] Token launch for protocol governance and staking rewards
+- [ ] Multi-chain expansion
+- [ ] Actuarial model for premium pricing
 
 ### Long-Term Vision
 GigShield becomes the **universal insurance layer for the gig economy** — any platform, any gig, any worker can access trustless, affordable coverage through a single Solana-native protocol.
 
 ---
 
-## 7. LONG DESCRIPTION (Submission Form — 200-300 words)
+## 8. LONG DESCRIPTION (Submission Form — 200-300 words)
 
 **GigShield — Decentralized Micro-Insurance for the Gig Economy on Solana**
 
-The gig economy employs over 2 billion workers globally, yet the vast majority lack any form of insurance coverage. Traditional insurance products demand monthly premiums, require lengthy paperwork, and rely on centralized claims processors — fundamentally incompatible with the on-demand nature of gig work. Insurance remains a "dead category" on Solana, with no protocol successfully addressing this massive gap. GigShield changes that.
+The gig economy employs over 2 billion workers globally, yet the vast majority lack any insurance coverage. Traditional insurance is fundamentally incompatible with gig work — requiring monthly premiums, lengthy paperwork, and centralized claims processors. Insurance remains a "dead category" on Solana. GigShield changes that.
 
-GigShield is a decentralized micro-insurance protocol built natively on Solana using the Anchor framework. Workers pay micro-premiums as low as 0.001 SOL per individual gig — not per month — receiving instant, on-chain coverage the moment their transaction confirms. When incidents occur, workers submit claims with on-chain evidence hashes, which are then reviewed by a decentralized network of staked validators.
+GigShield is a decentralized micro-insurance protocol built natively on Solana using the Anchor framework. Workers pay micro-premiums as low as 0.001 SOL per individual gig, receiving instant on-chain coverage the moment their transaction confirms. When incidents occur, workers submit claims with a SHA-256 fingerprint of their evidence description anchored immutably on-chain — tamper-proof and verifiable by anyone.
 
-The protocol implements a robust 2/3 majority consensus mechanism: validators must stake a minimum of 1 SOL to participate, build reputation scores through accurate voting, and are held accountable through on-chain transparency. Approved claims trigger automatic payouts from PDA-secured pool vaults directly to workers' wallets — no intermediaries, no delays, no gatekeepers.
+Claims enter a 48-hour voting window, displayed with a real-time countdown timer and vote progress bar. Staked validators review the evidence and vote approve or reject. A 2/3 supermajority consensus is required — approved claims trigger automatic payouts of 95% to the worker, with 5% collected into the protocol treasury PDA for long-term sustainability. Validators earn +5 reputation points for each claim resolved by consensus. An anti-fraud cap limits claims to 10× total premiums paid.
 
-GigShield supports multiple insurance categories including RideShare, Delivery, Freelance, Construction, and Healthcare — each with configurable premium rates and maximum payouts. The smart contract features 6 core instructions, comprehensive event emissions for indexing, and 13 custom error codes ensuring security and reliability.
+GigShield supports five insurance categories — RideShare, Delivery, Freelance, Construction, Healthcare — each with configurable premium rates and maximum payouts. The protocol features 8 custom instructions, 13 error codes, a validator leaderboard, pool analytics, and 10/10 passing integration tests deployed live on Solana Devnet.
 
-Built with Solana's sub-second finality and near-zero transaction costs, GigShield makes micro-insurance economically viable for the first time. The frontend, built with Next.js 14 and Solana Wallet Adapter, provides an intuitive interface for workers, pool administrators, and validators alike.
-
-GigShield resurrects insurance on Solana — making coverage accessible, affordable, and trustless for the billions who need it most.
+Built with Solana's sub-second finality and near-zero transaction costs, GigShield makes micro-insurance economically viable. GigShield resurrects insurance on Solana — trustless, transparent, and accessible to the billions who need it most.
 
 ---
 
-## 8. ARTWORK BRIEF
+## 9. ARTWORK BRIEF
 
 ### Logo Design
 
@@ -279,7 +325,7 @@ GigShield resurrects insurance on Solana — making coverage accessible, afforda
 - Small Solana logo accent at the bottom of the shield
 
 **Typography:**
-- Font: Bold, geometric sans-serif (like Inter Bold or Space Grotesk)
+- Font: Bold, geometric sans-serif (Inter Bold or Space Grotesk)
 - "Gig" in white, "Shield" in gradient (indigo → purple)
 
 **Color Palette:**
@@ -310,52 +356,39 @@ GigShield resurrects insurance on Solana — making coverage accessible, afforda
 
 ---
 
-## DEPLOYMENT CHECKLIST
+## 10. DEPLOYMENT INFO
 
-### Smart Contract (Solana Devnet)
+### Smart Contract (Live on Solana Devnet)
+
+| Field | Value |
+|---|---|
+| Program ID | `4oYtnLRhL2mRfzfXpM7CaC8WUZeAnEdHcAkyDPsmyDYV` |
+| Network | Solana Devnet |
+| Framework | Anchor 0.30.1 |
+| Upgrade Authority | `52rWpvP4SeQ2n8B3ULPsYN6zTmYd6ZeQHM8VqXfjcsZ8` |
+
+### Frontend (Live on Vercel)
+
+| Field | Value |
+|---|---|
+| URL | https://gigshield.vercel.app |
+| Framework | Next.js 14 |
+| Hosting | Vercel |
+
+### Build Commands
+
 ```bash
-# 1. Set Solana CLI to devnet
-solana config set --url devnet
-
-# 2. Create or check your keypair
-solana-keygen new --no-bip39-passphrase  # skip if already have one
-
-# 3. Airdrop devnet SOL
-solana airdrop 2
-
-# 4. Build the program
-cd /path/to/GigShield
-anchor build
-
-# 5. Get the generated program ID
-solana-keygen pubkey target/deploy/gig_shield-keypair.json
-
-# 6. Update the program ID in:
-#    - programs/gig_shield/src/lib.rs (declare_id! macro)
-#    - Anchor.toml ([programs.devnet] section)
-
-# 7. Rebuild with correct program ID
-anchor build
-
-# 8. Deploy to devnet
+# Smart contract
+anchor build --no-idl -- --tools-version v1.53
 anchor deploy --provider.cluster devnet
-```
 
-### Frontend (Vercel)
-```bash
-# 1. Push code to GitHub
-cd /path/to/GigShield
-git init
-git add .
-git commit -m "GigShield - Decentralized Micro-Insurance for Gig Workers"
-git remote add origin https://github.com/YOUR_USERNAME/gigshield.git
-git push -u origin main
+# Integration tests (requires ~4 SOL on devnet)
+ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+ANCHOR_WALLET=~/.config/solana/id.json \
+npm test
 
-# 2. Deploy to Vercel
-cd app
-npx vercel --prod
-# Or connect the GitHub repo via vercel.com dashboard
-# Set root directory to "app" in Vercel project settings
+# Frontend
+cd app && npm run build
 ```
 
 ---
