@@ -6,6 +6,10 @@ import Navbar from "@/components/Navbar";
 export const metadata: Metadata = {
   title: "GigShield - DePIN Freelancer Insurance on Solana",
   description: "Micro-insurance for the gig economy, powered by decentralized validators",
+  icons: {
+    icon: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

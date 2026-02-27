@@ -1,5 +1,6 @@
 "use client";
 import { FC } from "react";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 const WalletMultiButton = dynamic(
   () => import("@solana/wallet-adapter-react-ui").then((m) => m.WalletMultiButton),
@@ -10,7 +11,7 @@ const Navbar: FC = () => (
   <nav className="fixed top-0 w-full z-50 bg-dark-950/80 backdrop-blur-xl border-b border-gray-800">
     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-lg">G</div>
+        <Image src="/logo.jpg" alt="GigShield" width={40} height={40} className="rounded-xl" />
         <span className="text-xl font-bold gradient-text">GigShield</span>
       </div>
       <div className="hidden md:flex items-center gap-8">
