@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{program::invoke, system_instruction};
+use anchor_lang::solana_program::{program::{invoke, invoke_signed}, system_instruction};
 
 declare_id!("4oYtnLRhL2mRfzfXpM7CaC8WUZeAnEdHcAkyDPsmyDYV");
 
@@ -221,8 +221,21 @@ pub mod gig_shield {
         let vault_balance = ctx.accounts.pool_vault.lamports();
         require!(vault_balance >= amount, GigError::InsufficientPoolFunds);
 
-        **ctx.accounts.pool_vault.to_account_info().try_borrow_mut_lamports()? -= amount;
-        **ctx.accounts.worker.to_account_info().try_borrow_mut_lamports()? += amount;
+        let pool_key = ctx.accounts.pool.key();
+        let vault_bump = ctx.bumps.pool_vault;
+        invoke_signed(
+            &system_instruction::transfer(
+                &ctx.accounts.pool_vault.key(),
+                &ctx.accounts.worker.key(),
+                amount,
+            ),
+            &[
+                ctx.accounts.pool_vault.to_account_info(),
+                ctx.accounts.worker.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+            &[&[b"pool-vault", pool_key.as_ref(), &[vault_bump]]],
+        )?;
 
         claim.status = ClaimStatus::Paid;
 
@@ -283,8 +296,21 @@ pub mod gig_shield {
         let vault_balance = ctx.accounts.validator_vault.lamports();
         require!(vault_balance >= amount, GigError::InsufficientPoolFunds);
 
-        **ctx.accounts.validator_vault.to_account_info().try_borrow_mut_lamports()? -= amount;
-        **ctx.accounts.voter.to_account_info().try_borrow_mut_lamports()? += amount;
+        let voter_key = ctx.accounts.voter.key();
+        let vault_bump = ctx.bumps.validator_vault;
+        invoke_signed(
+            &system_instruction::transfer(
+                &ctx.accounts.validator_vault.key(),
+                &ctx.accounts.voter.key(),
+                amount,
+            ),
+            &[
+                ctx.accounts.validator_vault.to_account_info(),
+                ctx.accounts.voter.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+            &[&[b"val-vault", voter_key.as_ref(), &[vault_bump]]],
+        )?;
 
         validator.is_active = false;
         validator.stake = 0;
