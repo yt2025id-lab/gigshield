@@ -19,7 +19,7 @@ const Navbar: FC = () => (
         <a href="#pools" className="text-gray-400 hover:text-white transition-colors">Pools</a>
         <a href="#claims" className="text-gray-400 hover:text-white transition-colors">Claims</a>
         <a href="#validate" className="text-gray-400 hover:text-white transition-colors">Validate</a>
-        <Link href="/demo" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">▶ Demo</Link>
+        <Link href="/demo" className="text-gray-400 hover:text-white transition-colors">▶ Demo</Link>
       </div>
       <WalletMultiButton />
     </div>

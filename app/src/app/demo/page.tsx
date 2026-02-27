@@ -1,128 +1,264 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-// ── Demo steps ─────────────────────────────────────────────────────────────────
+// ─── Characters ───────────────────────────────────────────────────────────────
+
+const CHARS = {
+  ahmad: {
+    emoji: "🚴",
+    name: "Ahmad Rizki",
+    age: 28,
+    role: "Delivery Driver",
+    city: "Surabaya, Indonesia",
+    color: "indigo",
+    wallet: "7xKp...m9Wq",
+  },
+  siti: {
+    emoji: "🛡️",
+    name: "Siti Rahayu",
+    age: 32,
+    role: "GigShield Validator #1",
+    city: "Jakarta, Indonesia",
+    color: "purple",
+    wallet: "3nFt...b2Hs",
+    stake: "1.0 SOL",
+    rep: 120,
+  },
+  budi: {
+    emoji: "⚡",
+    name: "Budi Santoso",
+    age: 45,
+    role: "GigShield Validator #2",
+    city: "Bandung, Indonesia",
+    color: "purple",
+    wallet: "9pRw...v5Jd",
+    stake: "1.5 SOL",
+    rep: 105,
+  },
+};
+
+// ─── Steps ────────────────────────────────────────────────────────────────────
+
 const STEPS = [
   {
     id: 1,
-    role: "🚗 Gig Worker",
-    title: "Connect Wallet",
-    detail: "Phantom wallet connected on Solana Devnet",
+    actor: "ahmad",
+    phase: "👤 Meet Ahmad",
+    title: "A Day in the Life of a Gig Worker",
+    quote: "I do 15–20 deliveries a day. Last month, a customer claimed they never received the package — and ShopeeExpress blamed me. I lost 3 days' income with zero protection. There's no insurance for people like me.",
+    ui: {
+      type: "profile",
+      label: "Ahmad's Situation",
+      lines: [
+        { k: "Job", v: "Delivery driver (freelance)" },
+        { k: "Income", v: "~Rp 2.5 jt / month" },
+        { k: "Insurance", v: "❌ None" },
+        { k: "Risk", v: "Package loss, accidents, fraud" },
+        { k: "Solana Wallet", v: "5.200 SOL" },
+      ],
+    },
+    toast: null,
     tx: null,
-    color: "indigo",
-    balance: "2.500 SOL",
-    icon: "👛",
   },
   {
     id: 2,
-    role: "🚗 Gig Worker",
-    title: "Browse Insurance Pools",
-    detail: "Found RideShare pool — 1% premium rate, max payout 5 SOL",
+    actor: "ahmad",
+    phase: "🔗 Step 1",
+    title: "Ahmad Discovers GigShield",
+    quote: "A friend told me about GigShield. I opened the app and connected my Phantom wallet. It took 3 seconds.",
+    ui: {
+      type: "wallet-connect",
+      label: "Connecting Wallet",
+      lines: [
+        { k: "App", v: "gigshield.vercel.app" },
+        { k: "Wallet", v: "Phantom" },
+        { k: "Network", v: "Solana Devnet" },
+        { k: "Address", v: "7xKp...m9Wq" },
+        { k: "Balance", v: "5.200 SOL ✓" },
+      ],
+    },
+    toast: "✅ Wallet connected!",
     tx: null,
-    color: "indigo",
-    balance: "2.500 SOL",
-    icon: "🏊",
   },
   {
     id: 3,
-    role: "🚗 Gig Worker",
-    title: "Deposit Premium",
-    detail: "Paid 0.010 SOL premium → coverage active for this gig",
-    tx: "3xK9mP...f7Qw2r",
-    color: "indigo",
-    balance: "2.490 SOL",
-    icon: "💳",
+    actor: "ahmad",
+    phase: "🏊 Step 2",
+    title: "Browse Insurance Pools",
+    quote: "I saw the 📦 Delivery pool — 1% premium rate, max payout 2 SOL. 14 other delivery workers are already insured here. I found my pool.",
+    ui: {
+      type: "pool-card",
+      label: "📦 Delivery Pool",
+      lines: [
+        { k: "Category", v: "📦 Delivery" },
+        { k: "Premium Rate", v: "1% per gig" },
+        { k: "Max Payout", v: "2.000 SOL" },
+        { k: "TVL", v: "0.280 SOL" },
+        { k: "Active Policies", v: "14 workers" },
+        { k: "Status", v: "🟢 Active" },
+      ],
+    },
+    toast: null,
+    tx: null,
   },
   {
     id: 4,
-    role: "🚗 Gig Worker",
-    title: "Incident Occurs — Submit Claim",
-    detail: "\"Client refused to pay after completed delivery. Invoice #4821 attached.\" → SHA-256 fingerprint anchored on-chain",
-    tx: "7tR2nX...k3Lp9s",
-    color: "yellow",
-    balance: "2.489 SOL",
-    icon: "📋",
+    actor: "ahmad",
+    phase: "💳 Step 3",
+    title: "Pay Micro-Premium — Get Covered",
+    quote: "Before starting my delivery route today, I deposited 0.002 SOL — that's less than Rp 300. My policy activated instantly. For the first time ever, I'm insured for this gig.",
+    ui: {
+      type: "tx",
+      label: "Premium Deposited",
+      lines: [
+        { k: "Amount", v: "0.002 SOL" },
+        { k: "Pool", v: "📦 Delivery" },
+        { k: "Coverage", v: "Up to 0.020 SOL (10×)" },
+        { k: "Policy Status", v: "🟢 Active" },
+        { k: "TX", v: "3xK9mP...f7Qw2r ✓" },
+        { k: "New Balance", v: "5.198 SOL" },
+      ],
+    },
+    toast: "🟢 Coverage active — Ahmad is insured!",
+    tx: "3xK9mP...f7Qw2r",
   },
   {
     id: 5,
-    role: "🛡️ Validator 1",
-    title: "Validator Reviews Evidence",
-    detail: "Read claim description, verified SHA-256 fingerprint → votes ✓ Approve",
-    tx: "5gH8vY...m1Nq4t",
-    color: "purple",
-    balance: null,
-    icon: "✅",
+    actor: "ahmad",
+    phase: "⚠️ Step 4",
+    title: "Incident — Package Stolen",
+    quote: "At 3:47 PM, I delivered a package to Jl. Raya Gubeng No. 12. The customer opened the door, took the package, then reported it 'not received' to ShopeeExpress. I submitted a claim with full evidence.",
+    ui: {
+      type: "claim",
+      label: "Claim Submitted",
+      lines: [
+        { k: "Claim ID", v: "claim-4821" },
+        { k: "Amount", v: "0.010 SOL" },
+        { k: "Description", v: '"Package #SP-4821 delivered at 15:47. Customer confirmed receipt but reported missing. GPS log + photo attached."' },
+        { k: "Evidence SHA-256", v: "a3f2c8...9d71e4 ✓" },
+        { k: "Voting Deadline", v: "48 hours" },
+        { k: "TX", v: "7tR2nX...k3Lp9s ✓" },
+      ],
+    },
+    toast: "📋 Claim anchored on-chain — evidence fingerprinted!",
+    tx: "7tR2nX...k3Lp9s",
   },
   {
     id: 6,
-    role: "🛡️ Validator 2",
-    title: "Second Validator Votes",
-    detail: "Independent review → votes ✓ Approve  |  Vote tally: 2/3 — consensus reached!",
-    tx: "9pW4xZ...b6Cr7u",
-    color: "purple",
-    balance: null,
-    icon: "✅",
+    actor: "siti",
+    phase: "🗳️ Step 5",
+    title: "Validator Siti Reviews the Claim",
+    quote: "I received a notification about Ahmad's claim. I read his evidence — GPS coordinates matched the delivery address, photo timestamp is consistent. This looks legitimate. I vote Approve.",
+    ui: {
+      type: "vote",
+      label: "Siti's Vote",
+      lines: [
+        { k: "Validator", v: "Siti Rahayu (7xFt...b2Hs)" },
+        { k: "Stake", v: "1.0 SOL" },
+        { k: "Reputation", v: "120 pts" },
+        { k: "Evidence Reviewed", v: "✓ GPS log + photo" },
+        { k: "Decision", v: "✅ APPROVE" },
+        { k: "Vote Tally", v: "1 approve / 0 reject" },
+        { k: "TX", v: "5gH8vY...m1Nq4t ✓" },
+      ],
+    },
+    toast: "🗳️ Validator 1 voted — 1/3 approvals",
+    tx: "5gH8vY...m1Nq4t",
   },
   {
     id: 7,
-    role: "⚡ Protocol",
-    title: "2/3 Consensus — Claim Approved",
-    detail: "Supermajority reached. Claim status → Approved. Payout unlocked.",
-    tx: null,
-    color: "green",
-    balance: null,
-    icon: "🏆",
+    actor: "budi",
+    phase: "🗳️ Step 6",
+    title: "Validator Budi Reviews — Consensus Reached!",
+    quote: "Independent of Siti, I reviewed the same evidence. The claim is credible — timestamped GPS log at the correct address. I vote Approve. 2/3 reached — consensus!",
+    ui: {
+      type: "vote",
+      label: "Consensus Reached!",
+      lines: [
+        { k: "Validator", v: "Budi Santoso (9pRw...v5Jd)" },
+        { k: "Stake", v: "1.5 SOL" },
+        { k: "Reputation", v: "105 → 110 pts (+5)" },
+        { k: "Decision", v: "✅ APPROVE" },
+        { k: "Vote Tally", v: "2 approve / 0 reject" },
+        { k: "Consensus", v: "🏆 2/3 REACHED!" },
+        { k: "TX", v: "9pW4xZ...b6Cr7u ✓" },
+      ],
+    },
+    toast: "🏆 2/3 consensus! Claim APPROVED on-chain!",
+    tx: "9pW4xZ...b6Cr7u",
   },
   {
     id: 8,
-    role: "🚗 Gig Worker",
-    title: "Withdraw Payout",
-    detail: "0.100 SOL approved → 0.095 SOL to wallet (5% protocol fee: 0.005 SOL to treasury)",
+    actor: "ahmad",
+    phase: "💸 Step 7",
+    title: "Ahmad Withdraws His Payout",
+    quote: "I got a notification — my claim was approved! I clicked Withdraw and 0.0095 SOL hit my wallet in seconds. For the first time in my career, insurance actually worked for me.",
+    ui: {
+      type: "payout",
+      label: "Payout Received 🎉",
+      lines: [
+        { k: "Claim Amount", v: "0.010 SOL" },
+        { k: "Protocol Fee (5%)", v: "−0.0005 SOL → Treasury" },
+        { k: "Ahmad Receives", v: "0.0095 SOL ✓" },
+        { k: "New Balance", v: "5.207 SOL" },
+        { k: "Net Profit vs Premium", v: "+0.0075 SOL" },
+        { k: "TX", v: "2mB5wL...h9Ds3v ✓" },
+      ],
+    },
+    toast: "💸 0.0095 SOL received — Ahmad is protected!",
     tx: "2mB5wL...h9Ds3v",
-    color: "green",
-    balance: "2.584 SOL",
-    icon: "💸",
   },
 ];
 
-const STEP_DELAY = 1800; // ms between steps
+const STEP_DELAY = 3200;
 
-function fakeTxLink(tx: string) {
-  return `https://explorer.solana.com/tx/${tx}?cluster=devnet`;
-}
-
-const colorMap: Record<string, { bg: string; border: string; text: string; dot: string; badge: string }> = {
+const COLOR: Record<string, { ring: string; bg: string; border: string; badge: string; text: string }> = {
   indigo: {
+    ring: "ring-indigo-500/50",
     bg: "bg-indigo-500/10",
-    border: "border-indigo-500/40",
-    text: "text-indigo-300",
-    dot: "bg-indigo-500",
+    border: "border-indigo-500/30",
     badge: "bg-indigo-500/20 text-indigo-300",
-  },
-  yellow: {
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/40",
-    text: "text-yellow-300",
-    dot: "bg-yellow-400",
-    badge: "bg-yellow-500/20 text-yellow-300",
+    text: "text-indigo-300",
   },
   purple: {
+    ring: "ring-purple-500/50",
     bg: "bg-purple-500/10",
-    border: "border-purple-500/40",
-    text: "text-purple-300",
-    dot: "bg-purple-500",
+    border: "border-purple-500/30",
     badge: "bg-purple-500/20 text-purple-300",
+    text: "text-purple-300",
   },
   green: {
+    ring: "ring-green-500/50",
     bg: "bg-green-500/10",
-    border: "border-green-500/40",
-    text: "text-green-300",
-    dot: "bg-green-500",
+    border: "border-green-500/30",
     badge: "bg-green-500/20 text-green-300",
+    text: "text-green-300",
   },
 };
+
+function UICard({ ui }: { ui: (typeof STEPS)[0]["ui"] }) {
+  const isPayout = ui.type === "payout";
+  const borderCls = isPayout ? "border-green-500/40" : "border-gray-700/60";
+  return (
+    <div className={`rounded-xl border ${borderCls} bg-gray-900/60 overflow-hidden`}>
+      <div className={`px-4 py-2 text-xs font-semibold border-b ${borderCls} ${isPayout ? "text-green-400 bg-green-500/10" : "text-gray-400 bg-gray-800/40"}`}>
+        {ui.label}
+      </div>
+      <div className="p-4 space-y-1.5">
+        {ui.lines.map((l) => (
+          <div key={l.k} className="flex gap-2 text-xs">
+            <span className="text-gray-500 shrink-0 w-28">{l.k}</span>
+            <span className={`text-gray-200 ${l.v.includes("APPROVE") ? "text-green-400 font-bold" : ""} ${l.v.includes("REACHED") ? "text-yellow-400 font-bold" : ""}`}>
+              {l.v}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DemoPage() {
   const [running, setRunning] = useState(false);
@@ -130,11 +266,14 @@ export default function DemoPage() {
   const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [speed, setSpeed] = useState<1 | 2>(1); // 1 = normal, 2 = fast
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const delay = STEP_DELAY / speed;
 
   const showToast = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2800);
+    setTimeout(() => setToast(null), 2600);
   };
 
   const runDemo = async () => {
@@ -147,17 +286,10 @@ export default function DemoPage() {
     for (let i = 0; i < STEPS.length; i++) {
       const step = STEPS[i];
       setActiveStep(step.id);
-      await new Promise((r) => setTimeout(r, STEP_DELAY));
+      await new Promise((r) => setTimeout(r, delay));
       setVisibleSteps((prev) => [...prev, step.id]);
-
-      // Special toasts
-      if (step.id === 3) showToast("✅ Premium deposited — you're covered!");
-      if (step.id === 4) showToast("📋 Claim submitted — evidence anchored on-chain");
-      if (step.id === 7) showToast("🏆 Consensus reached — claim approved!");
-      if (step.id === 8) showToast("💸 0.095 SOL received in wallet!");
-
-      // Auto-scroll
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+      if (step.toast) showToast(step.toast);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 150);
     }
 
     setActiveStep(null);
@@ -176,11 +308,11 @@ export default function DemoPage() {
   const progress = Math.round((visibleSteps.length / STEPS.length) * 100);
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12 space-y-8">
+    <div className="max-w-4xl mx-auto px-6 py-12 space-y-10">
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-24 right-6 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-xl border bg-green-900/90 border-green-500/50 text-green-200 animate-pulse">
+        <div className="fixed top-24 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-2xl border bg-gray-900 border-indigo-500/50 text-white max-w-xs">
           {toast}
         </div>
       )}
@@ -188,27 +320,48 @@ export default function DemoPage() {
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <Image src="/logo.jpg" alt="GigShield" width={48} height={48} className="rounded-xl" />
-          <h1 className="text-3xl font-bold gradient-text">GigShield Demo</h1>
+          <Image src="/logo.jpg" alt="GigShield" width={52} height={52} className="rounded-xl shadow-lg" />
+          <div className="text-left">
+            <h1 className="text-3xl font-bold gradient-text">GigShield Demo</h1>
+            <p className="text-xs text-gray-500">Decentralized Micro-Insurance on Solana</p>
+          </div>
         </div>
-        <p className="text-gray-400 max-w-xl mx-auto">
-          Watch the complete gig worker journey — from getting insured to withdrawing a payout —
-          all on-chain on Solana in under 30 seconds.
+        <p className="text-gray-300 text-lg max-w-xl mx-auto leading-relaxed">
+          Follow <strong className="text-white">Ahmad Rizki</strong>, a delivery driver from Surabaya,
+          as he gets insured, files a claim, and receives his payout — all on-chain on Solana.
         </p>
+      </div>
 
-        {/* Flow summary */}
-        <div className="flex items-center justify-center gap-1 flex-wrap text-xs text-gray-500 mt-2">
-          {["Connect Wallet", "→", "Deposit Premium", "→", "Submit Claim", "→", "Validators Vote", "→", "Withdraw Payout 💸"].map((s, i) => (
-            <span key={i} className={s === "→" ? "text-gray-700" : "text-gray-400"}>{s}</span>
-          ))}
-        </div>
+      {/* Character introductions — always visible */}
+      <div className="grid grid-cols-3 gap-3">
+        {Object.values(CHARS).map((c) => {
+          const col = COLOR[c.color];
+          return (
+            <div key={c.name} className={`card border ${col.border} ${col.bg} text-center space-y-2 py-4`}>
+              <div className={`w-12 h-12 rounded-full ring-2 ${col.ring} bg-gray-800 flex items-center justify-center text-2xl mx-auto`}>
+                {c.emoji}
+              </div>
+              <div>
+                <p className="font-semibold text-sm">{c.name}</p>
+                <p className={`text-xs ${col.text}`}>{c.role}</p>
+                <p className="text-xs text-gray-600">{c.city}</p>
+              </div>
+              {"stake" in c && (
+                <div className="flex justify-center gap-3 text-xs text-gray-500">
+                  <span>Stake: <span className="text-white">{c.stake}</span></span>
+                  <span>Rep: <span className="text-white">{c.rep}</span></span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Progress bar */}
       {(running || done) && (
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-gray-500">
-            <span>{done ? "Demo complete" : `Step ${visibleSteps.length} / ${STEPS.length}`}</span>
+            <span>{done ? "Story complete ✓" : `Step ${visibleSteps.length} of ${STEPS.length}`}</span>
             <span>{progress}%</span>
           </div>
           <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -225,157 +378,147 @@ export default function DemoPage() {
         </div>
       )}
 
-      {/* Start button */}
+      {/* Start controls */}
       {!running && !done && (
-        <div className="text-center py-6">
+        <div className="text-center space-y-4 py-4">
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => setSpeed(1)}
+              className={`px-4 py-2 rounded-lg text-sm border transition-all ${speed === 1 ? "border-indigo-500 bg-indigo-500/20 text-indigo-300" : "border-gray-700 text-gray-500 hover:border-gray-500"}`}
+            >
+              Normal Speed
+            </button>
+            <button
+              onClick={() => setSpeed(2)}
+              className={`px-4 py-2 rounded-lg text-sm border transition-all ${speed === 2 ? "border-indigo-500 bg-indigo-500/20 text-indigo-300" : "border-gray-700 text-gray-500 hover:border-gray-500"}`}
+            >
+              ⚡ Fast
+            </button>
+          </div>
           <button
             onClick={runDemo}
-            className="btn-primary text-lg px-10 py-4 rounded-2xl shadow-lg shadow-indigo-500/20 hover:scale-105 transition-transform"
+            className="btn-primary text-lg px-12 py-4 rounded-2xl shadow-lg shadow-indigo-500/20 hover:scale-105 transition-transform"
           >
-            ▶ Run Full Demo
+            ▶ Start Ahmad's Story
           </button>
-          <p className="text-xs text-gray-600 mt-3">Simulates 8 on-chain steps · ~15 seconds</p>
+          <p className="text-xs text-gray-600">7 steps · {speed === 1 ? "~25 seconds" : "~13 seconds"} · Follow Ahmad from uninsured to protected</p>
         </div>
       )}
 
-      {/* Running spinner */}
+      {/* Active step indicator */}
       {running && activeStep !== null && (
-        <div className="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl">
+        <div className="flex items-center gap-3 px-4 py-3 bg-gray-800/60 border border-gray-700/60 rounded-xl">
           <div className="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin shrink-0" />
-          <p className="text-sm text-indigo-300">
-            Processing: <strong>{STEPS.find((s) => s.id === activeStep)?.title}</strong>
+          <p className="text-sm text-gray-300">
+            {STEPS.find((s) => s.id === activeStep)?.phase} — <span className="text-white font-medium">{STEPS.find((s) => s.id === activeStep)?.title}</span>
           </p>
         </div>
       )}
 
-      {/* Steps timeline */}
-      <div className="space-y-3">
+      {/* Story steps */}
+      <div className="space-y-6">
         {STEPS.map((step) => {
           const visible = visibleSteps.includes(step.id);
-          const active = activeStep === step.id && !visible;
-          const c = colorMap[step.color];
+          const char = CHARS[step.actor as keyof typeof CHARS];
+          const col = COLOR[char.color];
 
           return (
             <div
               key={step.id}
-              className={`relative transition-all duration-500 ${
-                visible ? "opacity-100 translate-y-0" : active ? "opacity-60 translate-y-1" : "opacity-0 translate-y-4 pointer-events-none h-0 overflow-hidden"
-              }`}
+              className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6 pointer-events-none h-0 overflow-hidden"}`}
             >
-              <div className={`card border ${c.border} ${c.bg} space-y-2`}>
-                <div className="flex items-start gap-3">
-                  {/* Step number + icon */}
-                  <div className="shrink-0 flex flex-col items-center gap-1">
-                    <div className={`w-9 h-9 rounded-full ${c.bg} border ${c.border} flex items-center justify-center text-lg`}>
-                      {step.icon}
-                    </div>
-                    <span className="text-xs text-gray-600">#{step.id}</span>
+              <div className={`card border ${col.border} space-y-4`}>
+                {/* Step header */}
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ring-2 ${col.ring} bg-gray-800 flex items-center justify-center text-xl shrink-0`}>
+                    {char.emoji}
                   </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.badge}`}>
-                        {step.role}
-                      </span>
-                      {step.balance && (
-                        <span className="text-xs text-gray-500">
-                          Wallet: <span className="text-white font-mono">{step.balance}</span>
-                        </span>
-                      )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${col.badge}`}>{step.phase}</span>
+                      <span className="text-xs text-gray-500">{char.name} · {char.role}</span>
                     </div>
-                    <p className={`font-semibold ${c.text}`}>{step.title}</p>
-                    <p className="text-sm text-gray-400 mt-0.5 leading-relaxed">{step.detail}</p>
-                    {step.tx && (
-                      <p className="text-xs text-gray-600 mt-1.5 font-mono">
-                        TX:{" "}
-                        <a
-                          href={fakeTxLink(step.tx)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-indigo-400 hover:underline"
-                        >
-                          {step.tx}
-                        </a>
-                        {" "}
-                        <span className="text-green-500">✓ Confirmed</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Check badge */}
-                  <div className={`shrink-0 w-6 h-6 rounded-full ${c.dot} flex items-center justify-center text-white text-xs font-bold`}>
-                    ✓
+                    <h3 className="font-semibold text-white mt-0.5">{step.title}</h3>
                   </div>
                 </div>
-              </div>
 
-              {/* Connector line */}
-              {step.id < STEPS.length && (
-                <div className="absolute left-[28px] top-full w-0.5 h-3 bg-gray-700" />
-              )}
+                {/* Quote / speech bubble */}
+                <div className={`relative ml-12 p-4 rounded-xl ${col.bg} border ${col.border}`}>
+                  <div className="absolute -left-3 top-4 w-3 h-3 rotate-45 border-l border-b" style={{ background: "inherit", borderColor: "inherit" }} />
+                  <p className="text-sm text-gray-200 leading-relaxed italic">"{step.quote}"</p>
+                  <p className={`text-xs mt-2 font-medium ${col.text}`}>— {char.name}, {char.age}, {char.city}</p>
+                </div>
+
+                {/* UI card mockup */}
+                <div className="ml-12">
+                  <UICard ui={step.ui} />
+                </div>
+
+                {step.tx && (
+                  <p className="ml-12 text-xs text-gray-600 font-mono">
+                    On-chain TX:{" "}
+                    <a href={`https://explorer.solana.com/tx/${step.tx}?cluster=devnet`} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">
+                      {step.tx}
+                    </a>
+                    {" "}<span className="text-green-500">✓ Confirmed on Solana</span>
+                  </p>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Final success card */}
+      {/* Final outcome */}
       {done && (
-        <div className="card border border-green-500/50 bg-green-500/10 text-center space-y-4 py-8">
+        <div className="card border border-green-500/40 bg-green-500/5 space-y-6 text-center py-8">
           <p className="text-5xl">🎉</p>
-          <h2 className="text-2xl font-bold text-green-400">Demo Complete!</h2>
-          <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
+          <div>
+            <h2 className="text-2xl font-bold text-green-400 mb-2">Ahmad is Protected.</h2>
+            <p className="text-gray-400 max-w-lg mx-auto text-sm leading-relaxed">
+              For the first time in his career, Ahmad filed an insurance claim and actually got paid.
+              No forms. No office visits. No waiting weeks. <strong className="text-white">Just Solana.</strong>
+            </p>
+          </div>
+
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto">
             {[
-              { label: "Premium Paid", value: "0.010 SOL" },
-              { label: "Claim Payout", value: "0.095 SOL" },
-              { label: "Net Profit", value: "+0.085 SOL" },
+              { label: "Premium Paid", value: "0.002 SOL", sub: "≈ Rp 290", color: "text-indigo-400" },
+              { label: "Claim Approved", value: "0.010 SOL", sub: "by 2/3 validators", color: "text-yellow-400" },
+              { label: "Ahmad Received", value: "0.0095 SOL", sub: "95% payout", color: "text-green-400" },
+              { label: "Time to Payout", value: "< 48 hrs", sub: "trustless on Solana", color: "text-purple-400" },
             ].map((s) => (
-              <div key={s.label} className="bg-green-500/10 rounded-xl p-3">
-                <p className="text-lg font-bold text-white">{s.value}</p>
-                <p className="text-xs text-green-400">{s.label}</p>
+              <div key={s.label} className="bg-gray-800/60 rounded-xl p-3">
+                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-white font-medium">{s.label}</p>
+                <p className="text-xs text-gray-500">{s.sub}</p>
               </div>
             ))}
           </div>
-          <p className="text-sm text-gray-400 max-w-sm mx-auto">
-            The entire flow — from paying a 0.010 SOL premium to receiving a 0.095 SOL payout —
-            executed trustlessly on Solana in seconds.
-          </p>
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Link href="/" className="btn-primary px-6">
-              Try the Real App →
+
+          {/* What happened on-chain */}
+          <div className="text-left max-w-lg mx-auto space-y-2 text-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-3">What happened on Solana</p>
+            {[
+              "✓ Premium stored in pool_vault PDA — no intermediary holds funds",
+              "✓ Claim evidence SHA-256 fingerprint anchored immutably on-chain",
+              "✓ 2 independent validators voted — no single point of control",
+              "✓ Payout auto-transferred from vault to Ahmad's wallet",
+              "✓ 5% fee collected to protocol treasury for sustainability",
+              "✓ Siti & Budi's reputation scores increased (+5 each)",
+            ].map((line) => (
+              <p key={line} className="text-gray-400 text-xs">{line}</p>
+            ))}
+          </div>
+
+          <div className="flex gap-3 justify-center flex-wrap pt-2">
+            <Link href="/" className="btn-primary px-8">
+              Try the Real App on Solana →
             </Link>
             <button onClick={reset} className="btn-secondary px-6">
-              ↺ Run Again
+              ↺ Watch Again
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Legend */}
-      {!running && !done && (
-        <div className="card space-y-3">
-          <h3 className="font-semibold text-sm text-gray-400">What this demo covers:</h3>
-          <div className="grid sm:grid-cols-2 gap-2 text-sm">
-            {[
-              { icon: "👛", text: "Wallet connection on Solana Devnet" },
-              { icon: "💳", text: "Micro-premium deposit (0.010 SOL)" },
-              { icon: "📋", text: "Claim with SHA-256 evidence fingerprint" },
-              { icon: "🛡️", text: "2 validators voting via 2/3 consensus" },
-              { icon: "⚡", text: "On-chain claim approval" },
-              { icon: "💸", text: "Payout (95%) + 5% protocol fee" },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-2 text-gray-400">
-                <span>{item.icon}</span>
-                <span>{item.text}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
-            <p className="text-xs text-indigo-400">
-              💡 This is a <strong>visual simulation</strong> of on-chain transactions.
-              The actual app at <Link href="/" className="underline">gigshield.vercel.app</Link> runs
-              live on Solana Devnet with real transactions.
-            </p>
           </div>
         </div>
       )}
