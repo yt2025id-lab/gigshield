@@ -3,6 +3,11 @@ use anchor_lang::solana_program::{program::invoke, system_instruction};
 
 declare_id!("4oYtnLRhL2mRfzfXpM7CaC8WUZeAnEdHcAkyDPsmyDYV");
 
+const VOTING_PERIOD: i64 = 172_800; // 48 hours in seconds
+const CLAIM_MULTIPLIER: u64 = 10; // max claim = premiums_paid * 10
+const MIN_STAKE: u64 = 1_000_000_000; // 1 SOL
+const UNSTAKE_COOLDOWN: i64 = 86_400; // 24 hours
+
 #[program]
 pub mod gig_shield {
     use super::*;
@@ -17,6 +22,7 @@ pub mod gig_shield {
     ) -> Result<()> {
         require!(premium_rate_bps > 0 && premium_rate_bps <= 1000, GigError::InvalidPremiumRate);
         require!(max_payout > 0, GigError::InvalidAmount);
+        require!(pool_id.len() <= 32, GigError::PoolIdTooLong);
 
         let pool = &mut ctx.accounts.pool;
         pool.admin = ctx.accounts.admin.key();
@@ -95,6 +101,12 @@ pub mod gig_shield {
         require!(policy.is_active, GigError::PolicyInactive);
         require!(policy.premiums_paid > 0, GigError::NoPremiumsPaid);
 
+        // FIX: Cap claim amount against premiums paid (max 10x multiplier)
+        let max_claimable = policy.premiums_paid.saturating_mul(CLAIM_MULTIPLIER);
+        require!(amount <= max_claimable, GigError::ClaimExceedsPremiumCap);
+
+        let now = Clock::get()?.unix_timestamp;
+
         let claim = &mut ctx.accounts.claim;
         claim.pool = pool.key();
         claim.policy = policy.key();
@@ -106,7 +118,8 @@ pub mod gig_shield {
         claim.votes_for = 0;
         claim.votes_against = 0;
         claim.status = ClaimStatus::Pending;
-        claim.created_at = Clock::get()?.unix_timestamp;
+        claim.created_at = now;
+        claim.voting_deadline = now + VOTING_PERIOD; // FIX: 48-hour voting window
         claim.bump = ctx.bumps.claim;
 
         emit!(ClaimSubmitted {
@@ -119,7 +132,7 @@ pub mod gig_shield {
         Ok(())
     }
 
-    /// Validator votes on a claim
+    /// Validator votes on a claim (double-voting prevented by PDA seeds)
     pub fn vote_claim(
         ctx: Context<VoteClaim>,
         _pool_id: String,
@@ -129,6 +142,10 @@ pub mod gig_shield {
         let claim = &mut ctx.accounts.claim;
         require!(claim.status == ClaimStatus::Pending, GigError::ClaimNotPending);
 
+        // FIX: Check voting deadline
+        let now = Clock::get()?.unix_timestamp;
+        require!(now <= claim.voting_deadline, GigError::VotingExpired);
+
         let validator = &mut ctx.accounts.validator;
         require!(validator.is_active, GigError::ValidatorInactive);
 
@@ -136,7 +153,7 @@ pub mod gig_shield {
         vote.claim = claim.key();
         vote.validator = ctx.accounts.voter.key();
         vote.approve = approve;
-        vote.voted_at = Clock::get()?.unix_timestamp;
+        vote.voted_at = now;
         vote.bump = ctx.bumps.vote;
 
         if approve {
@@ -147,13 +164,48 @@ pub mod gig_shield {
 
         validator.claims_voted += 1;
 
+        // Check consensus (2/3 majority with minimum 3 votes)
         let total_votes = claim.votes_for + claim.votes_against;
         if total_votes >= 3 {
             if claim.votes_for * 3 >= total_votes * 2 {
                 claim.status = ClaimStatus::Approved;
+                // FIX: Reward validators who voted correctly
+                validator.reputation_score = validator.reputation_score.saturating_add(5);
             } else if claim.votes_against * 3 >= total_votes * 2 {
                 claim.status = ClaimStatus::Rejected;
+                validator.reputation_score = validator.reputation_score.saturating_add(5);
             }
+        }
+
+        emit!(VoteCasted {
+            claim: claim.key(),
+            validator: ctx.accounts.voter.key(),
+            approve,
+            votes_for: claim.votes_for,
+            votes_against: claim.votes_against,
+        });
+
+        Ok(())
+    }
+
+    /// Resolve an expired claim that didn't reach consensus
+    pub fn resolve_expired_claim(
+        ctx: Context<ResolveExpiredClaim>,
+        _pool_id: String,
+        _claim_id: String,
+    ) -> Result<()> {
+        let claim = &mut ctx.accounts.claim;
+        require!(claim.status == ClaimStatus::Pending, GigError::ClaimNotPending);
+
+        let now = Clock::get()?.unix_timestamp;
+        require!(now > claim.voting_deadline, GigError::VotingNotExpired);
+
+        // If voting expired without consensus, reject the claim
+        let total_votes = claim.votes_for + claim.votes_against;
+        if total_votes >= 3 && claim.votes_for * 3 >= total_votes * 2 {
+            claim.status = ClaimStatus::Approved;
+        } else {
+            claim.status = ClaimStatus::Rejected;
         }
 
         Ok(())
@@ -191,7 +243,7 @@ pub mod gig_shield {
         ctx: Context<RegisterValidator>,
         stake_amount: u64,
     ) -> Result<()> {
-        require!(stake_amount >= 1_000_000_000, GigError::InsufficientStake); // min 1 SOL
+        require!(stake_amount >= MIN_STAKE, GigError::InsufficientStake);
 
         invoke(
             &system_instruction::transfer(
@@ -214,6 +266,28 @@ pub mod gig_shield {
         validator.is_active = true;
         validator.registered_at = Clock::get()?.unix_timestamp;
         validator.bump = ctx.bumps.validator;
+
+        Ok(())
+    }
+
+    /// FIX: Validator can unstake after cooldown period
+    pub fn unstake_validator(ctx: Context<UnstakeValidator>) -> Result<()> {
+        let validator = &mut ctx.accounts.validator;
+        require!(validator.is_active, GigError::ValidatorInactive);
+
+        let now = Clock::get()?.unix_timestamp;
+        let time_since_register = now - validator.registered_at;
+        require!(time_since_register >= UNSTAKE_COOLDOWN, GigError::UnstakeCooldownNotMet);
+
+        let amount = validator.stake;
+        let vault_balance = ctx.accounts.validator_vault.lamports();
+        require!(vault_balance >= amount, GigError::InsufficientPoolFunds);
+
+        **ctx.accounts.validator_vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+        **ctx.accounts.voter.to_account_info().try_borrow_mut_lamports()? += amount;
+
+        validator.is_active = false;
+        validator.stake = 0;
 
         Ok(())
     }
@@ -310,6 +384,19 @@ pub struct VoteClaim<'info> {
 
 #[derive(Accounts)]
 #[instruction(pool_id: String, claim_id: String)]
+pub struct ResolveExpiredClaim<'info> {
+    #[account(seeds = [b"pool", pool.admin.as_ref(), pool_id.as_bytes()], bump = pool.bump)]
+    pub pool: Account<'info, InsurancePool>,
+    #[account(
+        mut,
+        seeds = [b"claim", pool.key().as_ref(), claim_id.as_bytes()],
+        bump = claim.bump
+    )]
+    pub claim: Account<'info, Claim>,
+}
+
+#[derive(Accounts)]
+#[instruction(pool_id: String, claim_id: String)]
 pub struct WithdrawPayout<'info> {
     #[account(
         mut,
@@ -338,6 +425,23 @@ pub struct RegisterValidator<'info> {
         space = 8 + ValidatorNode::MAX_SIZE,
         seeds = [b"validator", voter.key().as_ref()],
         bump
+    )]
+    pub validator: Account<'info, ValidatorNode>,
+    /// CHECK: Validator vault
+    #[account(mut, seeds = [b"val-vault", voter.key().as_ref()], bump)]
+    pub validator_vault: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub voter: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UnstakeValidator<'info> {
+    #[account(
+        mut,
+        seeds = [b"validator", voter.key().as_ref()],
+        bump = validator.bump,
+        constraint = validator.authority == voter.key() @ GigError::Unauthorized,
     )]
     pub validator: Account<'info, ValidatorNode>,
     /// CHECK: Validator vault
@@ -397,11 +501,12 @@ pub struct Claim {
     pub votes_against: u16,
     pub status: ClaimStatus,
     pub created_at: i64,
+    pub voting_deadline: i64, // NEW: voting expires after 48h
     pub bump: u8,
 }
 
 impl Claim {
-    pub const MAX_SIZE: usize = 32 + 32 + 32 + (4 + 32) + 8 + 32 + (4 + 256) + 2 + 2 + 1 + 8 + 1;
+    pub const MAX_SIZE: usize = 32 + 32 + 32 + (4 + 32) + 8 + 32 + (4 + 256) + 2 + 2 + 1 + 8 + 8 + 1;
 }
 
 #[account]
@@ -471,6 +576,15 @@ pub struct ClaimSubmitted {
 }
 
 #[event]
+pub struct VoteCasted {
+    pub claim: Pubkey,
+    pub validator: Pubkey,
+    pub approve: bool,
+    pub votes_for: u16,
+    pub votes_against: u16,
+}
+
+#[event]
 pub struct PayoutWithdrawn {
     pub pool: Pubkey,
     pub worker: Pubkey,
@@ -493,16 +607,26 @@ pub enum GigError {
     NoPremiumsPaid,
     #[msg("Claim exceeds max payout")]
     ClaimExceedsMax,
+    #[msg("Claim exceeds premium cap (max 10x premiums paid)")]
+    ClaimExceedsPremiumCap,
     #[msg("Description too long")]
     DescriptionTooLong,
+    #[msg("Pool ID too long (max 32 chars)")]
+    PoolIdTooLong,
     #[msg("Claim is not pending")]
     ClaimNotPending,
     #[msg("Claim not approved")]
     ClaimNotApproved,
+    #[msg("Voting period has expired")]
+    VotingExpired,
+    #[msg("Voting period has not expired yet")]
+    VotingNotExpired,
     #[msg("Validator is inactive")]
     ValidatorInactive,
     #[msg("Insufficient stake (min 1 SOL)")]
     InsufficientStake,
+    #[msg("Unstake cooldown not met (24h)")]
+    UnstakeCooldownNotMet,
     #[msg("Insufficient pool funds")]
     InsufficientPoolFunds,
     #[msg("Unauthorized")]
