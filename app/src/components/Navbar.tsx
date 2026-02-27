@@ -1,6 +1,7 @@
 "use client";
 import { FC } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 const WalletMultiButton = dynamic(
   () => import("@solana/wallet-adapter-react-ui").then((m) => m.WalletMultiButton),
@@ -18,6 +19,7 @@ const Navbar: FC = () => (
         <a href="#pools" className="text-gray-400 hover:text-white transition-colors">Pools</a>
         <a href="#claims" className="text-gray-400 hover:text-white transition-colors">Claims</a>
         <a href="#validate" className="text-gray-400 hover:text-white transition-colors">Validate</a>
+        <Link href="/demo" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">▶ Demo</Link>
       </div>
       <WalletMultiButton />
     </div>
