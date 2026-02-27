@@ -43,6 +43,9 @@ function votePDA(claim: PublicKey, voter: PublicKey) {
     PROGRAM_ID
   );
 }
+function treasuryPDA() {
+  return PublicKey.findProgramAddressSync([Buffer.from("treasury")], PROGRAM_ID);
+}
 
 // ─── Airdrop helper ────────────────────────────────────────────────────────────
 
@@ -262,9 +265,10 @@ describe("GigShield", () => {
 
     const beforeBalance = await provider.connection.getBalance(worker.publicKey);
 
+    const [treasury] = treasuryPDA();
     await program.methods
       .withdrawPayout(POOL_ID, CLAIM_ID)
-      .accounts({ pool, claim, poolVault: vault, worker: worker.publicKey, systemProgram: SystemProgram.programId })
+      .accounts({ pool, claim, poolVault: vault, worker: worker.publicKey, treasury, systemProgram: SystemProgram.programId })
       .signers([worker])
       .rpc();
 

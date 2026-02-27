@@ -13,8 +13,10 @@ import {
   getValidatorPDA,
   getValidatorVaultPDA,
   getVotePDA,
+  getTreasuryPDA,
   fetchAllPools,
   fetchAllClaims,
+  fetchAllValidators,
   fetchPolicy,
   fetchValidator,
 } from "./gigshield";
@@ -103,10 +105,11 @@ export function useGigShield() {
       const [poolPDA] = getPoolPDA(poolAdmin, poolId);
       const [claimPDA] = getClaimPDA(poolPDA, claimId);
       const [vaultPDA] = getPoolVaultPDA(poolPDA);
+      const [treasuryPDA] = getTreasuryPDA();
 
       return pg().methods
         .withdrawPayout(poolId, claimId)
-        .accounts({ pool: poolPDA, claim: claimPDA, poolVault: vaultPDA, worker: provider.wallet.publicKey, systemProgram: PublicKey.default })
+        .accounts({ pool: poolPDA, claim: claimPDA, poolVault: vaultPDA, worker: provider.wallet.publicKey, treasury: treasuryPDA, systemProgram: PublicKey.default })
         .rpc();
     },
     [getProvider, pg]
@@ -140,6 +143,7 @@ export function useGigShield() {
 
   const getPools = useCallback(async () => fetchAllPools(pg()), [pg]);
   const getClaims = useCallback(async () => fetchAllClaims(pg()), [pg]);
+  const getValidators = useCallback(async () => fetchAllValidators(pg()), [pg]);
 
   const getMyPolicy = useCallback(
     async (pool: PublicKey) => {
@@ -166,6 +170,7 @@ export function useGigShield() {
     unstakeValidator,
     getPools,
     getClaims,
+    getValidators,
     getMyPolicy,
     getMyValidator,
   };

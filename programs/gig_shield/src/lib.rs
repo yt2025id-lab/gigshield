@@ -7,6 +7,7 @@ const VOTING_PERIOD: i64 = 172_800; // 48 hours in seconds
 const CLAIM_MULTIPLIER: u64 = 10; // max claim = premiums_paid * 10
 const MIN_STAKE: u64 = 1_000_000_000; // 1 SOL
 const UNSTAKE_COOLDOWN: i64 = 86_400; // 24 hours
+const PROTOCOL_FEE_BPS: u64 = 500; // 5% protocol fee on payouts
 
 #[program]
 pub mod gig_shield {
@@ -221,13 +222,18 @@ pub mod gig_shield {
         let vault_balance = ctx.accounts.pool_vault.lamports();
         require!(vault_balance >= amount, GigError::InsufficientPoolFunds);
 
+        let fee = amount * PROTOCOL_FEE_BPS / 10_000;
+        let worker_amount = amount - fee;
+
         let pool_key = ctx.accounts.pool.key();
         let vault_bump = ctx.bumps.pool_vault;
+
+        // Transfer net payout to worker (95%)
         invoke_signed(
             &system_instruction::transfer(
                 &ctx.accounts.pool_vault.key(),
                 &ctx.accounts.worker.key(),
-                amount,
+                worker_amount,
             ),
             &[
                 ctx.accounts.pool_vault.to_account_info(),
@@ -237,6 +243,23 @@ pub mod gig_shield {
             &[&[b"pool-vault", pool_key.as_ref(), &[vault_bump]]],
         )?;
 
+        // Transfer protocol fee to treasury (5%)
+        if fee > 0 {
+            invoke_signed(
+                &system_instruction::transfer(
+                    &ctx.accounts.pool_vault.key(),
+                    &ctx.accounts.treasury.key(),
+                    fee,
+                ),
+                &[
+                    ctx.accounts.pool_vault.to_account_info(),
+                    ctx.accounts.treasury.to_account_info(),
+                    ctx.accounts.system_program.to_account_info(),
+                ],
+                &[&[b"pool-vault", pool_key.as_ref(), &[vault_bump]]],
+            )?;
+        }
+
         claim.status = ClaimStatus::Paid;
 
         let pool = &mut ctx.accounts.pool;
@@ -245,7 +268,8 @@ pub mod gig_shield {
         emit!(PayoutWithdrawn {
             pool: pool.key(),
             worker: ctx.accounts.worker.key(),
-            amount,
+            amount: worker_amount,
+            fee,
         });
 
         Ok(())
@@ -441,6 +465,9 @@ pub struct WithdrawPayout<'info> {
     pub pool_vault: UncheckedAccount<'info>,
     #[account(mut)]
     pub worker: Signer<'info>,
+    /// CHECK: Protocol treasury collects 5% fee on payouts
+    #[account(mut, seeds = [b"treasury"], bump)]
+    pub treasury: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -614,7 +641,8 @@ pub struct VoteCasted {
 pub struct PayoutWithdrawn {
     pub pool: Pubkey,
     pub worker: Pubkey,
-    pub amount: u64,
+    pub amount: u64, // net amount to worker (95%)
+    pub fee: u64,    // protocol fee (5%)
 }
 
 // ============ ERRORS ============

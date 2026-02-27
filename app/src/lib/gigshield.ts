@@ -59,6 +59,13 @@ export function getVotePDA(claim: PublicKey, voter: PublicKey) {
   );
 }
 
+export function getTreasuryPDA() {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("treasury")],
+    PROGRAM_ID_PUBKEY
+  );
+}
+
 // ---- Category helpers ----
 
 export const GIG_CATEGORIES = [
@@ -120,6 +127,14 @@ export async function fetchValidator(program: Program<any>, voter: PublicKey) {
     return await (program.account as any).validatorNode.fetch(validatorPDA);
   } catch {
     return null;
+  }
+}
+
+export async function fetchAllValidators(program: Program<any>) {
+  try {
+    return await (program.account as any).validatorNode.all();
+  } catch {
+    return [];
   }
 }
 
