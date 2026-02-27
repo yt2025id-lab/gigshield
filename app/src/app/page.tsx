@@ -27,6 +27,13 @@ function formatCountdown(deadlineSec: number, now: number): { text: string; colo
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("pools");
+
+  // Sync tab from URL query param e.g. /?tab=claims
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("tab") as Tab;
+    if (t && ["pools", "claims", "validate", "stats"].includes(t)) setTab(t);
+  }, []);
   const [pools, setPools] = useState<any[]>([]);
   const [claims, setClaims] = useState<any[]>([]);
   const [validators, setValidators] = useState<any[]>([]);
